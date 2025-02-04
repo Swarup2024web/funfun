@@ -8,29 +8,35 @@
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 </head>
 <body>
-    <!-- Login Screen -->
-    <div id="login-screen">
+    <!-- Login Section -->
+    <div id="login-container">
         <h2>Welcome to FunFun Chat</h2>
-        <input type="text" id="username" placeholder="Enter username" required>
+        <input type="text" id="username" placeholder="Enter username">
         <select id="gender">
             <option value="male">Male</option>
             <option value="female">Female</option>
         </select>
-        <input type="number" id="age" placeholder="Enter age" required>
-        <button onclick="joinChat()">Join Chat</button>
+        <input type="number" id="age" placeholder="Enter age">
+        <button onclick="joinChat()">Join</button>
     </div>
 
-    <!-- Chat Screen -->
-    <div id="chat-screen" class="hidden">
-        <div id="sidebar">
+    <!-- Chat Section -->
+    <div id="chat-container" class="hidden">
+        <div class="sidebar">
             <h3>Online Users</h3>
             <ul id="userList"></ul>
         </div>
-        <div id="chat-area">
-            <h2>Group Chat</h2>
+        <div class="chat-box">
+            <h3>Group Chat</h3>
             <div id="messages"></div>
             <input type="text" id="groupMessage" placeholder="Type a message">
             <button onclick="sendGroupMessage()">Send</button>
+        </div>
+        <div class="private-chat">
+            <h3>Private Chat</h3>
+            <select id="privateUsers"></select>
+            <input type="text" id="privateMessage" placeholder="Type private message">
+            <button onclick="sendPrivateMessage()">Send</button>
         </div>
     </div>
 
