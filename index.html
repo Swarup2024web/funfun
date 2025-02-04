@@ -3,92 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat App</title>
+    <title>FunFun Chat</title>
+    <link rel="stylesheet" href="style.css">
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 </head>
 <body>
-    <h2>Welcome to the Chat</h2>
-
-    <div id="login">
-        <input type="text" id="username" placeholder="Enter username">
+    <!-- Login Screen -->
+    <div id="login-screen">
+        <h2>Welcome to FunFun Chat</h2>
+        <input type="text" id="username" placeholder="Enter username" required>
         <select id="gender">
             <option value="male">Male</option>
             <option value="female">Female</option>
         </select>
-        <input type="number" id="age" placeholder="Enter age">
-        <button onclick="joinChat()">Join</button>
+        <input type="number" id="age" placeholder="Enter age" required>
+        <button onclick="joinChat()">Join Chat</button>
     </div>
 
-    <div id="chat" style="display:none;">
-        <h3>Group Chat</h3>
-        <div id="messages"></div>
-        <input type="text" id="groupMessage" placeholder="Type message">
-        <button onclick="sendGroupMessage()">Send</button>
-
-        <h3>Online Users</h3>
-        <ul id="userList"></ul>
-
-        <h3>Private Chat</h3>
-        <select id="privateUsers"></select>
-        <input type="text" id="privateMessage" placeholder="Type private message">
-        <button onclick="sendPrivateMessage()">Send</button>
+    <!-- Chat Screen -->
+    <div id="chat-screen" class="hidden">
+        <div id="sidebar">
+            <h3>Online Users</h3>
+            <ul id="userList"></ul>
+        </div>
+        <div id="chat-area">
+            <h2>Group Chat</h2>
+            <div id="messages"></div>
+            <input type="text" id="groupMessage" placeholder="Type a message">
+            <button onclick="sendGroupMessage()">Send</button>
+        </div>
     </div>
 
-    <script>
-        const socket = io("http://localhost:3000");
-        let userId = null;
-
-        function joinChat() {
-            const username = document.getElementById("username").value;
-            const gender = document.getElementById("gender").value;
-            const age = document.getElementById("age").value;
-
-            if (!username || !age) return alert("Please fill all fields.");
-
-            userId = socket.id;
-            socket.emit("join", { username, gender, age });
-
-            document.getElementById("login").style.display = "none";
-            document.getElementById("chat").style.display = "block";
-        }
-
-        socket.on("updateUsers", (users) => {
-            let userList = document.getElementById("userList");
-            let privateUsers = document.getElementById("privateUsers");
-            userList.innerHTML = "";
-            privateUsers.innerHTML = "";
-
-            users.forEach((user, index) => {
-                if (user.username) {
-                    userList.innerHTML += `<li>${user.username} (${user.gender}, ${user.age})</li>`;
-                    privateUsers.innerHTML += `<option value="${index}">${user.username}</option>`;
-                }
-            });
-        });
-
-        function sendGroupMessage() {
-            const message = document.getElementById("groupMessage").value;
-            if (message) {
-                socket.emit("sendGroupMessage", message);
-                document.getElementById("groupMessage").value = "";
-            }
-        }
-
-        socket.on("receiveGroupMessage", (data) => {
-            document.getElementById("messages").innerHTML += `<p><strong>${data.user.username}:</strong> ${data.message}</p>`;
-        });
-
-        function sendPrivateMessage() {
-            const message = document.getElementById("privateMessage").value;
-            const recipientIndex = document.getElementById("privateUsers").value;
-            
-            socket.emit("sendPrivateMessage", { recipientId: Object.keys(users)[recipientIndex], message });
-            document.getElementById("privateMessage").value = "";
-        }
-
-        socket.on("receivePrivateMessage", (data) => {
-            alert(`Private message from ${data.from.username}: ${data.message}`);
-        });
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
