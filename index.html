@@ -1,45 +1,258 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FunFun Chat</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FunFun Chat</title>
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <style>
+    /* Reset & Base */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      min-height: 100vh;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    /* Login Section */
+    #login-container {
+      width: 100%;
+      max-width: 400px;
+      background-color: #fff;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    #login-container h2 {
+      margin-bottom: 20px;
+    }
+
+    #login-container input,
+    #login-container select,
+    #login-container button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    #login-container button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    #login-container button:hover {
+      background-color: #0056b3;
+    }
+
+    /* Chat Layout */
+    #chat-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      width: 100%;
+      max-width: 1000px;
+      margin-top: 20px;
+    }
+
+    .sidebar,
+    .chat-box,
+    .private-chat {
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .sidebar {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .chat-box {
+      flex: 2;
+      min-width: 250px;
+    }
+
+    .private-chat {
+      flex: 1;
+      min-width: 250px;
+    }
+
+    h3 {
+      margin-bottom: 10px;
+    }
+
+    ul#userList {
+      list-style: none;
+    }
+
+    ul#userList li {
+      padding: 6px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    #messages {
+      height: 200px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      background-color: #fafafa;
+    }
+
+    .chat-box input,
+    .private-chat input,
+    .chat-box button,
+    .private-chat button,
+    .private-chat select {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      margin-top: 5px;
+    }
+
+    .chat-box button {
+      background-color: #28a745;
+      color: white;
+      margin-top: 10px;
+      border: none;
+    }
+
+    .chat-box button:hover {
+      background-color: #218838;
+    }
+
+    .private-chat button {
+      background-color: #6f42c1;
+      color: white;
+      border: none;
+      margin-top: 10px;
+    }
+
+    .private-chat button:hover {
+      background-color: #5a32a3;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      #chat-container {
+        flex-direction: column;
+      }
+
+      .sidebar,
+      .chat-box,
+      .private-chat {
+        width: 100%;
+      }
+    }
+  </style>
 </head>
 <body>
-    <!-- Login Section -->
-    <div id="login-container">
-        <h2>Welcome to FunFun Chat</h2>
-        <input type="text" id="username" placeholder="Enter username">
-        <select id="gender">
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-        </select>
-        <input type="number" id="age" placeholder="Enter age">
-        <button onclick="joinChat()">Join</button>
-    </div>
 
-    <!-- Chat Section -->
-    <div id="chat-container" class="hidden">
-        <div class="sidebar">
-            <h3>Online Users</h3>
-            <ul id="userList"></ul>
-        </div>
-        <div class="chat-box">
-            <h3>Group Chat</h3>
-            <div id="messages"></div>
-            <input type="text" id="groupMessage" placeholder="Type a message">
-            <button onclick="sendGroupMessage()">Send</button>
-        </div>
-        <div class="private-chat">
-            <h3>Private Chat</h3>
-            <select id="privateUsers"></select>
-            <input type="text" id="privateMessage" placeholder="Type private message">
-            <button onclick="sendPrivateMessage()">Send</button>
-        </div>
-    </div>
+  <!-- Login Section -->
+  <div id="login-container">
+    <h2>Welcome to FunFun Chat</h2>
+    <input type="text" id="username" placeholder="Enter username">
+    <select id="gender">
+      <option value="male">Male</option>
+      <option value="female">Female</option>
+    </select>
+    <input type="number" id="age" placeholder="Enter age">
+    <button onclick="joinChat()">Join</button>
+  </div>
 
-    <script src="script.js"></script>
+  <!-- Chat Section -->
+  <div id="chat-container" class="hidden">
+    <div class="sidebar">
+      <h3>Online Users</h3>
+      <ul id="userList"></ul>
+    </div>
+    <div class="chat-box">
+      <h3>Group Chat</h3>
+      <div id="messages"></div>
+      <input type="text" id="groupMessage" placeholder="Type a message">
+      <button onclick="sendGroupMessage()">Send</button>
+    </div>
+    <div class="private-chat">
+      <h3>Private Chat</h3>
+      <select id="privateUsers"></select>
+      <input type="text" id="privateMessage" placeholder="Type private message">
+      <button onclick="sendPrivateMessage()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    // Basic mockup JavaScript — extend with socket.io functionality
+    function joinChat() {
+      const username = document.getElementById("username").value;
+      if (!username) {
+        alert("Please enter your name.");
+        return;
+      }
+
+      document.getElementById("login-container").classList.add("hidden");
+      document.getElementById("chat-container").classList.remove("hidden");
+
+      // Mock: Add self to user list
+      const userList = document.getElementById("userList");
+      const privateUsers = document.getElementById("privateUsers");
+
+      const li = document.createElement("li");
+      li.textContent = username;
+      userList.appendChild(li);
+
+      const option = document.createElement("option");
+      option.value = username;
+      option.textContent = username;
+      privateUsers.appendChild(option);
+    }
+
+    function sendGroupMessage() {
+      const input = document.getElementById("groupMessage");
+      const message = input.value.trim();
+      if (message) {
+        const div = document.getElementById("messages");
+        const msg = document.createElement("div");
+        msg.textContent = "You: " + message;
+        div.appendChild(msg);
+        div.scrollTop = div.scrollHeight;
+        input.value = "";
+      }
+    }
+
+    function sendPrivateMessage() {
+      const input = document.getElementById("privateMessage");
+      const message = input.value.trim();
+      const recipient = document.getElementById("privateUsers").value;
+      if (message && recipient) {
+        alert("Private message to " + recipient + ": " + message);
+        input.value = "";
+      }
+    }
+  </script>
+
 </body>
-</html>
+        </html>
