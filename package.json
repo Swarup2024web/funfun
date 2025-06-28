@@ -1,31 +1,16 @@
 {
   "name": "funfun-chat",
   "version": "1.0.0",
-  "description": "FunFun Chat is a real-time chat application with group and private messaging features using Node.js and Socket.IO.",
+  "description": "Real-time group and private chat app",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "start": "node server.js"
   },
-  "keywords": [
-    "chat",
-    "socket.io",
-    "nodejs",
-    "real-time",
-    "funfun",
-    "group-chat",
-    "private-message"
-  ],
-  "author": "Swarup Banerjee",
+  "keywords": ["chat", "socket.io", "express", "realtime", "group-chat", "private-chat"],
+  "author": "Swarup",
   "license": "MIT",
   "dependencies": {
     "express": "^4.18.2",
     "socket.io": "^4.5.4"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.1"
-  },
-  "engines": {
-    "node": ">=14.0.0"
   }
 }
