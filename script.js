@@ -1,101 +1,89 @@
 const socket = io();
+let currentUsername = "";
 
-// Store username globally
-let currentUsername = '';
-
-// Join chat
 function joinChat() {
-    const username = document.getElementById('username').value.trim();
-    const gender = document.getElementById('gender').value;
-    const age = document.getElementById('age').value.trim();
+  const username = document.getElementById("username").value.trim();
+  const gender = document.getElementById("gender").value;
+  const age = document.getElementById("age").value.trim();
 
-    if (!username || !age) {
-        alert("Please enter your name and age.");
-        return;
-    }
+  if (!username || !age) return alert("Please enter all fields");
 
-    currentUsername = username;
+  currentUsername = username;
+  localStorage.setItem("funfun-user", JSON.stringify({ username, gender, age }));
 
-    // Hide login, show chat
-    document.getElementById('login-container').classList.add('hidden');
-    document.getElementById('chat-container').classList.remove('hidden');
+  document.getElementById("login-container").style.display = "none";
+  document.getElementById("chat-container").style.display = "block";
 
-    // Emit join event to server
-    socket.emit('user-joined', {
-        username,
-        gender,
-        age
-    });
+  socket.emit("user-joined", { username, gender, age });
 }
 
-// Receive updated user list
-socket.on('update-user-list', users => {
-    const userList = document.getElementById('userList');
-    const privateUsers = document.getElementById('privateUsers');
-
-    userList.innerHTML = '';
-    privateUsers.innerHTML = '';
-
-    users.forEach(user => {
-        // Add to sidebar
-        const li = document.createElement('li');
-        li.textContent = user.username;
-        userList.appendChild(li);
-
-        // Exclude current user from private list
-        if (user.username !== currentUsername) {
-            const option = document.createElement('option');
-            option.value = user.username;
-            option.textContent = user.username;
-            privateUsers.appendChild(option);
-        }
-    });
-});
-
-// Send group message
 function sendGroupMessage() {
-    const messageInput = document.getElementById('groupMessage');
-    const message = messageInput.value.trim();
-    if (!message) return;
-
-    socket.emit('group-message', {
-        username: currentUsername,
-        message
-    });
-
-    messageInput.value = '';
+  const msg = document.getElementById("groupMessage").value;
+  if (msg.trim()) {
+    socket.emit("group-message", { username: currentUsername, message: msg });
+    document.getElementById("groupMessage").value = "";
+  }
 }
 
-// Display group message
-socket.on('receive-group-message', data => {
-    const { username, message } = data;
-    const messagesDiv = document.getElementById('messages');
+function sendPrivateMessage() {
+  const toUser = document.getElementById("privateUsers").value;
+  const msg = document.getElementById("privateMessage").value;
+  if (toUser && msg.trim()) {
+    socket.emit("private-message", { from: currentUsername, to: toUser, message: msg });
+    appendMessage(`(To ${toUser}) ${currentUsername}: ${msg}`);
+    document.getElementById("privateMessage").value = "";
+  }
+}
 
-    const msg = document.createElement('div');
-    msg.textContent = `${username}: ${message}`;
-    messagesDiv.appendChild(msg);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+function logoutUser() {
+  localStorage.removeItem("funfun-user");
+  location.reload();
+}
+
+function appendMessage(msg) {
+  const messagesDiv = document.getElementById("messages");
+  const p = document.createElement("p");
+  p.textContent = msg;
+  p.classList.add("user-message");
+  messagesDiv.appendChild(p);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+socket.on("receive-group-message", (data) => {
+  appendMessage(`${data.username}: ${data.message}`);
 });
 
-// Send private message
-function sendPrivateMessage() {
-    const recipient = document.getElementById('privateUsers').value;
-    const message = document.getElementById('privateMessage').value.trim();
+socket.on("receive-private-message", ({ from, message }) => {
+  appendMessage(`(From ${from}) ${message}`);
+});
 
-    if (!message || !recipient) return;
+socket.on("update-user-list", (users) => {
+  const userList = document.getElementById("userList");
+  const privateSelect = document.getElementById("privateUsers");
+  userList.innerHTML = "";
+  privateSelect.innerHTML = "";
 
-    socket.emit('private-message', {
-        from: currentUsername,
-        to: recipient,
-        message
-    });
+  users.forEach((user) => {
+    if (user.username !== currentUsername) {
+      const li = document.createElement("li");
+      li.textContent = user.username;
+      userList.appendChild(li);
 
-    alert(`Private message sent to ${recipient}: ${message}`);
-    document.getElementById('privateMessage').value = '';
-}
+      const option = document.createElement("option");
+      option.value = user.username;
+      option.textContent = user.username;
+      privateSelect.appendChild(option);
+    }
+  });
+});
 
-// Receive private message
-socket.on('receive-private-message', data => {
-    const { from, message } = data;
-    alert(`Private message from ${from}: ${message}`);
+window.addEventListener("load", () => {
+  const saved = localStorage.getItem("funfun-user");
+  if (saved) {
+    const { username, gender, age } = JSON.parse(saved);
+    currentUsername = username;
+    document.getElementById("login-container").style.display = "none";
+    document.getElementById("chat-container").style.display = "block";
+    socket.emit("user-joined", { username, gender, age });
+  }
 });
