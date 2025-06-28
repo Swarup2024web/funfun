@@ -1,89 +1,104 @@
 const socket = io();
-let currentUsername = "";
 
+// Elements
+const loginContainer = document.getElementById("login-container");
+const chatContainer = document.getElementById("chat-container");
+const userList = document.getElementById("userList");
+const privateUsers = document.getElementById("privateUsers");
+const groupInput = document.getElementById("groupMessage");
+const privateInput = document.getElementById("privateMessage");
+const messagesDiv = document.getElementById("messages");
+
+// User data
+let currentUsername = localStorage.getItem("funfun-username");
+let currentUserData = localStorage.getItem("funfun-userdata");
+
+if (currentUsername && currentUserData) {
+  currentUserData = JSON.parse(currentUserData);
+  loginContainer.style.display = "none";
+  chatContainer.style.display = "block";
+  socket.emit("user-joined", currentUserData);
+}
+
+// Join chat
 function joinChat() {
   const username = document.getElementById("username").value.trim();
   const gender = document.getElementById("gender").value;
   const age = document.getElementById("age").value.trim();
 
-  if (!username || !age) return alert("Please enter all fields");
+  if (!username || !age) {
+    alert("Please fill in all fields.");
+    return;
+  }
 
+  const userData = { username, gender, age };
   currentUsername = username;
-  localStorage.setItem("funfun-user", JSON.stringify({ username, gender, age }));
+  currentUserData = userData;
 
-  document.getElementById("login-container").style.display = "none";
-  document.getElementById("chat-container").style.display = "block";
+  // Store in localStorage
+  localStorage.setItem("funfun-username", username);
+  localStorage.setItem("funfun-userdata", JSON.stringify(userData));
 
-  socket.emit("user-joined", { username, gender, age });
+  socket.emit("user-joined", userData);
+
+  loginContainer.style.display = "none";
+  chatContainer.style.display = "block";
 }
 
+// Group message
 function sendGroupMessage() {
-  const msg = document.getElementById("groupMessage").value;
-  if (msg.trim()) {
-    socket.emit("group-message", { username: currentUsername, message: msg });
-    document.getElementById("groupMessage").value = "";
+  const message = groupInput.value.trim();
+  if (message) {
+    socket.emit("group-message", { username: currentUsername, message });
+    groupInput.value = "";
   }
 }
 
+// Private message
 function sendPrivateMessage() {
-  const toUser = document.getElementById("privateUsers").value;
-  const msg = document.getElementById("privateMessage").value;
-  if (toUser && msg.trim()) {
-    socket.emit("private-message", { from: currentUsername, to: toUser, message: msg });
-    appendMessage(`(To ${toUser}) ${currentUsername}: ${msg}`);
-    document.getElementById("privateMessage").value = "";
+  const toUser = privateUsers.value;
+  const message = privateInput.value.trim();
+  if (toUser && message) {
+    socket.emit("private-message", { from: currentUsername, to: toUser, message });
+    messagesDiv.innerHTML += `<p><strong>To ${toUser} (private):</strong> ${message}</p>`;
+    privateInput.value = "";
   }
 }
 
-function logoutUser() {
-  localStorage.removeItem("funfun-user");
-  location.reload();
-}
-
-function appendMessage(msg) {
-  const messagesDiv = document.getElementById("messages");
-  const p = document.createElement("p");
-  p.textContent = msg;
-  p.classList.add("user-message");
-  messagesDiv.appendChild(p);
+// Receive group message
+socket.on("receive-group-message", ({ username, message }) => {
+  messagesDiv.innerHTML += `<p><strong>${username}:</strong> ${message}</p>`;
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
-}
-
-socket.on("receive-group-message", (data) => {
-  appendMessage(`${data.username}: ${data.message}`);
 });
 
+// Receive private message
 socket.on("receive-private-message", ({ from, message }) => {
-  appendMessage(`(From ${from}) ${message}`);
+  messagesDiv.innerHTML += `<p style="background:#ffd"><strong>${from} (private):</strong> ${message}</p>`;
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
 });
 
+// Update user list
 socket.on("update-user-list", (users) => {
-  const userList = document.getElementById("userList");
-  const privateSelect = document.getElementById("privateUsers");
   userList.innerHTML = "";
-  privateSelect.innerHTML = "";
+  privateUsers.innerHTML = "";
 
   users.forEach((user) => {
     if (user.username !== currentUsername) {
       const li = document.createElement("li");
-      li.textContent = user.username;
+      li.textContent = `${user.username} (${user.gender}, ${user.age})`;
       userList.appendChild(li);
 
       const option = document.createElement("option");
       option.value = user.username;
       option.textContent = user.username;
-      privateSelect.appendChild(option);
+      privateUsers.appendChild(option);
     }
   });
 });
 
-window.addEventListener("load", () => {
-  const saved = localStorage.getItem("funfun-user");
-  if (saved) {
-    const { username, gender, age } = JSON.parse(saved);
-    currentUsername = username;
-    document.getElementById("login-container").style.display = "none";
-    document.getElementById("chat-container").style.display = "block";
-    socket.emit("user-joined", { username, gender, age });
-  }
-});
+// Logout
+function logoutUser() {
+  localStorage.removeItem("funfun-username");
+  localStorage.removeItem("funfun-userdata");
+  location.reload();
+          }
