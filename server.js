@@ -1,41 +1,53 @@
-const express = require('express');
+// server.js
+const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
+const path = require("path");
+
 const app = express();
-const http = require('http').createServer(app);
-const io = require('socket.io')(http);
-const path = require('path');
+const server = http.createServer(app);
+const io = new Server(server);
 
-const PORT = process.env.PORT || 3000;
+const users = new Map();
 
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files (index.html, script.js, etc.)
+app.use(express.static(path.join(__dirname)));
 
-let users = [];
+// Handle socket connection
+io.on("connection", (socket) => {
+  console.log("🔌 New user connected:", socket.id);
 
-io.on('connection', socket => {
-    console.log('A user connected');
+  // When a user joins
+  socket.on("user-joined", (userData) => {
+    users.set(socket.id, { ...userData, socketId: socket.id });
+    io.emit("update-user-list", Array.from(users.values()));
+  });
 
-    socket.on('user-joined', data => {
-        users.push({ id: socket.id, username: data.username });
-        io.emit('update-user-list', users);
-    });
+  // Group message
+  socket.on("group-message", ({ username, message }) => {
+    io.emit("receive-group-message", { username, message });
+  });
 
-    socket.on('group-message', data => {
-        io.emit('receive-group-message', data);
-    });
+  // Private message
+  socket.on("private-message", ({ from, to, message }) => {
+    for (let [id, user] of users.entries()) {
+      if (user.username === to) {
+        io.to(id).emit("receive-private-message", { from, message });
+        break;
+      }
+    }
+  });
 
-    socket.on('private-message', ({ from, to, message }) => {
-        const target = users.find(u => u.username === to);
-        if (target) {
-            io.to(target.id).emit('receive-private-message', { from, message });
-        }
-    });
-
-    socket.on('disconnect', () => {
-        users = users.filter(u => u.id !== socket.id);
-        io.emit('update-user-list', users);
-        console.log('A user disconnected');
-    });
+  // User disconnects
+  socket.on("disconnect", () => {
+    users.delete(socket.id);
+    io.emit("update-user-list", Array.from(users.values()));
+    console.log("❌ User disconnected:", socket.id);
+  });
 });
 
-http.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+// Start the server
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`✅ Server running at http://localhost:${PORT}`);
 });
