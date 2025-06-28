@@ -1,73 +1,41 @@
 const express = require('express');
-const http = require('http');
-const socketIO = require('socket.io');
+const app = express();
+const http = require('http').createServer(app);
+const io = require('socket.io')(http);
 const path = require('path');
 
-const app = express();
-const server = http.createServer(app);
-const io = socketIO(server);
+const PORT = process.env.PORT || 3000;
 
-// Serve static files (HTML, CSS, JS)
-app.use(express.static(__dirname + '/public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Store users: { socketId: { username, gender, age } }
-let users = {};
+let users = [];
 
-io.on('connection', (socket) => {
-    console.log('New user connected:', socket.id);
+io.on('connection', socket => {
+    console.log('A user connected');
 
-    // When user joins
-    socket.on('user-joined', (userData) => {
-        users[socket.id] = {
-            username: userData.username,
-            gender: userData.gender,
-            age: userData.age
-        };
-
-        console.log(`${userData.username} joined.`);
-
-        // Update all clients with user list
-        updateUserList();
+    socket.on('user-joined', data => {
+        users.push({ id: socket.id, username: data.username });
+        io.emit('update-user-list', users);
     });
 
-    // Handle group message
-    socket.on('group-message', (data) => {
-        io.emit('receive-group-message', {
-            username: data.username,
-            message: data.message
-        });
+    socket.on('group-message', data => {
+        io.emit('receive-group-message', data);
     });
 
-    // Handle private message
-    socket.on('private-message', (data) => {
-        const recipientSocketId = Object.keys(users).find(
-            key => users[key].username === data.to
-        );
-
-        if (recipientSocketId) {
-            io.to(recipientSocketId).emit('receive-private-message', {
-                from: data.from,
-                message: data.message
-            });
+    socket.on('private-message', ({ from, to, message }) => {
+        const target = users.find(u => u.username === to);
+        if (target) {
+            io.to(target.id).emit('receive-private-message', { from, message });
         }
     });
 
-    // When a user disconnects
     socket.on('disconnect', () => {
-        console.log('User disconnected:', socket.id);
-        delete users[socket.id];
-        updateUserList();
+        users = users.filter(u => u.id !== socket.id);
+        io.emit('update-user-list', users);
+        console.log('A user disconnected');
     });
 });
 
-// Helper to send updated user list to all
-function updateUserList() {
-    const userArray = Object.values(users);
-    io.emit('update-user-list', userArray);
-}
-
-// Start the server
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`FunFun Chat server running on http://localhost:${PORT}`);
+http.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
 });
