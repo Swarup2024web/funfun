@@ -1,14 +1,13 @@
 {
   "name": "funfun-chat",
   "version": "1.0.0",
-  "description": "Real-time group and private chat app",
+  "description": "A simple real-time group and private chat application",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
-  "keywords": ["chat", "socket.io", "express", "realtime", "group-chat", "private-chat"],
   "author": "Swarup",
-  "license": "MIT",
+  "license": "ISC",
   "dependencies": {
     "express": "^4.18.2",
     "socket.io": "^4.5.4"
