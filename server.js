@@ -1,4 +1,3 @@
-// server.js
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -8,46 +7,41 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// Serve static files from root directory
+app.use(express.static(__dirname));
+
+// Store users
 const users = new Map();
 
-// Serve static files (index.html, script.js, etc.)
-app.use(express.static(path.join(__dirname)));
-
-// Handle socket connection
 io.on("connection", (socket) => {
-  console.log("🔌 New user connected:", socket.id);
-
-  // When a user joins
-  socket.on("user-joined", (userData) => {
-    users.set(socket.id, { ...userData, socketId: socket.id });
-    io.emit("update-user-list", Array.from(users.values()));
+  socket.on("user-joined", (user) => {
+    users.set(socket.id, { ...user, socketId: socket.id });
+    updateUserList();
   });
 
-  // Group message
-  socket.on("group-message", ({ username, message }) => {
-    io.emit("receive-group-message", { username, message });
+  socket.on("group-message", (data) => {
+    io.emit("receive-group-message", data);
   });
 
-  // Private message
   socket.on("private-message", ({ from, to, message }) => {
-    for (let [id, user] of users.entries()) {
-      if (user.username === to) {
-        io.to(id).emit("receive-private-message", { from, message });
-        break;
-      }
+    const recipient = [...users.values()].find((u) => u.username === to);
+    if (recipient) {
+      io.to(recipient.socketId).emit("receive-private-message", { from, message });
     }
   });
 
-  // User disconnects
   socket.on("disconnect", () => {
     users.delete(socket.id);
-    io.emit("update-user-list", Array.from(users.values()));
-    console.log("❌ User disconnected:", socket.id);
+    updateUserList();
   });
+
+  function updateUserList() {
+    const userArray = [...users.values()];
+    io.emit("update-user-list", userArray);
+  }
 });
 
-// Start the server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`✅ Server running at http://localhost:${PORT}`);
+  console.log(`Server running at http://localhost:${PORT}`);
 });
